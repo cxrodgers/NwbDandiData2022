@@ -1,0 +1,332 @@
+{
+ "cells": [
+  {
+   "cell_type": "markdown",
+   "id": "14a6fee1-c9d0-48a5-ae14-952a784017f0",
+   "metadata": {
+    "tags": []
+   },
+   "source": [
+    "# Usage Notes\n",
+    "This notebook demonstrates how to interact with the NWB files in the Rodgers 2022 dataset."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 5,
+   "id": "2ffd1a54-4ea8-42fa-bcb8-b5c344aa1457",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# NWB imports and DANDI imports\n",
+    "import pynwb\n",
+    "from pynwb import NWBHDF5IO\n",
+    "from dandi.dandiapi import DandiAPIClient"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 6,
+   "id": "1fbd5f09-2119-4363-b1f7-d694518870b4",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# This ID specifies the object recognition dataset\n",
+    "dandiset_id = '000231'\n",
+    "\n",
+    "# This specifies a path to an example NWB file, for a single session from subject 231CR\n",
+    "filepath = 'sub-231CR/sub-231CR_ses-20190921T144923_behavior+ecephys+image.nwb'"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 12,
+   "id": "37cf9033-ecce-4671-8f38-e61ff4c20acb",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "## This loads the NWB file without requiring the user to download the file\n",
+    "# First get the URI for the NWB file on dandihub\n",
+    "with DandiAPIClient() as client:\n",
+    "    asset = client.get_dandiset(dandiset_id, 'draft').get_asset_by_path(filepath)\n",
+    "    s3_path = asset.get_content_url(follow_redirects=1, strip_query=True)\n",
+    "\n",
+    "# This creates an IO object for the file\n",
+    "# If the file was downloaded locally, replace `s3_path` with the path to the file, and don't specify a driver\n",
+    "io = NWBHDF5IO(s3_path, mode='r', load_namespaces=True, driver='ros3')\n",
+    "\n",
+    "# Read the file\n",
+    "nwbfile = io.read()"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 13,
+   "id": "81debca8-97b3-461f-961d-3f4380d5ef34",
+   "metadata": {},
+   "outputs": [
+    {
+     "data": {
+      "text/plain": [
+       "root pynwb.file.NWBFile at 0x139891534850656\n",
+       "Fields:\n",
+       "  acquisition: {\n",
+       "    behavioral video <class 'pynwb.image.ImageSeries'>,\n",
+       "    extracellular array recording <class 'pynwb.ecephys.ElectricalSeries'>\n",
+       "  }\n",
+       "  devices: {\n",
+       "    4253 <class 'pynwb.device.Device'>,\n",
+       "    high-speed camera <class 'pynwb.device.Device'>\n",
+       "  }\n",
+       "  electrode_groups: {\n",
+       "    all_channels <class 'pynwb.ecephys.ElectrodeGroup'>\n",
+       "  }\n",
+       "  electrodes: electrodes <class 'hdmf.common.table.DynamicTable'>\n",
+       "  experiment_description: Video of mouse performing whisker-based shape discrimination. This session also contains neural recordings in barrel cortex\n",
+       "  experimenter: ['Chris Rodgers']\n",
+       "  file_create_date: [datetime.datetime(2022, 4, 14, 18, 46, 55, 752342, tzinfo=tzoffset(None, -14400))]\n",
+       "  identifier: 190921_231CR\n",
+       "  institution: Columbia University\n",
+       "  intervals: {\n",
+       "    trials <class 'pynwb.epoch.TimeIntervals'>\n",
+       "  }\n",
+       "  keywords: <StrDataset for HDF5 dataset \"keywords\": shape (12,), type \"|O\">\n",
+       "  processing: {\n",
+       "    behavior <class 'pynwb.base.ProcessingModule'>\n",
+       "  }\n",
+       "  session_description: session from mouse 231CR on 2019-09-21\n",
+       "  session_start_time: 2019-09-21 14:49:23.813817-04:00\n",
+       "  subject: subject pynwb.file.Subject at 0x139891534849888\n",
+       "Fields:\n",
+       "  date_of_birth: 2018-09-14 00:00:00-04:00\n",
+       "  description: Mouse 231CR\n",
+       "  sex: M\n",
+       "  species: Mus musculus\n",
+       "  strain: C57BL6/J\n",
+       "  subject_id: 231CR\n",
+       "\n",
+       "  timestamps_reference_time: 2019-09-21 14:49:23.813817-04:00\n",
+       "  trials: trials <class 'pynwb.epoch.TimeIntervals'>\n",
+       "  units: units <class 'pynwb.misc.Units'>"
+      ]
+     },
+     "execution_count": 13,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "nwbfile"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 19,
+   "id": "cebdd7f3-aeec-4311-b20c-860dfee6fc96",
+   "metadata": {},
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "     start_time  stop_time  response_window_open_time stimulus\n",
+      "id                                                            \n",
+      "4         5.910     13.085                      8.932   convex\n",
+      "5        13.085     19.335                     16.105  concave\n",
+      "6        19.335     26.570                     22.357   convex\n",
+      "7        26.570     32.960                     29.591  concave\n",
+      "8        32.960     39.885                     35.981   convex\n",
+      "..          ...        ...                        ...      ...\n",
+      "245    1980.075   1987.075                   1983.097   convex\n",
+      "246    1987.075   1994.745                   1990.098   convex\n",
+      "247    1994.745   2010.905                   1997.767  concave\n",
+      "248    2010.905   2054.200                   2013.930   convex\n",
+      "249    2054.200   2071.970                   2057.223   convex\n",
+      "\n",
+      "[246 rows x 4 columns]\n"
+     ]
+    }
+   ],
+   "source": [
+    "print(nwbfile.trials[:][['start_time', 'stop_time', 'response_window_open_time', 'stimulus']])"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 27,
+   "id": "fc0f6f20-c0e3-486b-b8d8-ced1b90502b4",
+   "metadata": {},
+   "outputs": [
+    {
+     "data": {
+      "text/plain": [
+       "angle pynwb.base.TimeSeries at 0x139891533389888\n",
+       "Fields:\n",
+       "  comments: no comments\n",
+       "  continuity: continuous\n",
+       "  conversion: 1.0\n",
+       "  data: <HDF5 dataset \"data\": shape (412375,), type \"<f8\">\n",
+       "  description: (float) the angle of the whisker in degrees, with 0 horizontal and positive protracting toward top of frame\n",
+       "  interval: 1\n",
+       "  resolution: -1.0\n",
+       "  timestamps: <HDF5 dataset \"timestamps\": shape (412375,), type \"<f8\">\n",
+       "  timestamps_unit: seconds\n",
+       "  unit: degrees"
+      ]
+     },
+     "execution_count": 27,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "nwbfile.processing['behavior']['processed_position_whisker_C2']['angle']"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 31,
+   "id": "156c588f-3a34-4da4-888a-387493bd3f92",
+   "metadata": {},
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "      start_time  stop_time      angle\n",
+      "id                                    \n",
+      "0          7.925      7.940  18.299733\n",
+      "1          7.970     10.295   8.927367\n",
+      "2         21.355     21.355  21.127114\n",
+      "3         21.405     21.415  21.502236\n",
+      "4         21.440     21.445  20.567538\n",
+      "...          ...        ...        ...\n",
+      "1102    2041.825   2041.835  14.718447\n",
+      "1103    2059.385   2059.450   4.739310\n",
+      "1104    2059.490   2059.515   5.581840\n",
+      "1105    2059.550   2059.580   4.801581\n",
+      "1106    2059.605   2059.630   6.810567\n",
+      "\n",
+      "[1107 rows x 3 columns]\n"
+     ]
+    }
+   ],
+   "source": [
+    "print(nwbfile.processing['behavior']['contacts_by_whisker_C2'][:][['start_time', 'stop_time', 'angle']])"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 34,
+   "id": "ce7af476-9dfe-4ece-bb3c-a6829932d320",
+   "metadata": {},
+   "outputs": [
+    {
+     "data": {
+      "text/plain": [
+       "array([[-2551, -2293, -2906, ..., -3222, -3925, -4305],\n",
+       "       [-2563, -2306, -2930, ..., -3227, -3934, -4294],\n",
+       "       [-2593, -2321, -2935, ..., -3219, -3941, -4299],\n",
+       "       ...,\n",
+       "       [  821,  1258,  1194, ...,  1013,   930,  1141],\n",
+       "       [  810,  1268,  1204, ...,  1042,   901,  1105],\n",
+       "       [  810,  1258,  1192, ...,  1026,   906,  1115]], dtype=int16)"
+      ]
+     },
+     "execution_count": 34,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "nwbfile.acquisition['extracellular array recording'].data[:1000000]"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 40,
+   "id": "24d1aa1e-a3f2-4431-afc9-d749ba912228",
+   "metadata": {},
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "     inhibitory   depth                                        spike_times\n",
+      "id                                                                        \n",
+      "39        False   485.0  [37.215446883180434, 62.707934376765024, 62.73...\n",
+      "68        False   145.0  [155.29713108782187, 194.45698095183477, 199.1...\n",
+      "74        False   425.0  [35.0990090533536, 124.02156464108779, 124.025...\n",
+      "79        False   885.0  [35.01400887276583, 177.74264544127064, 233.51...\n",
+      "92        False   225.0  [20.989145742806684, 24.481253161989116, 28.77...\n",
+      "101       False   505.0  [35.008408860868286, 46.32286623241501, 101.78...\n",
+      "104       False   505.0  [62.66546761987527, 62.731267759671454, 100.83...\n",
+      "106       False   485.0  [246.60022506647968, 262.8729596388373, 324.27...\n",
+      "130       False   625.0  [10.219022861063138, 10.268689633249707, 11.96...\n",
+      "136       False   525.0  [11.473558859730133, 12.995295426080048, 13.24...\n",
+      "147       False   445.0  [155.28886440359213, 221.1516376661634, 284.91...\n",
+      "162       False  1005.0  [196.01271759041973, 196.17881794330944, 257.6...\n",
+      "174       False   125.0  [259.6023860236495, 265.35163157158456, 266.67...\n",
+      "196       False   665.0  [10.132156009842873, 10.223422870411213, 10.33...\n",
+      "197        True   585.0  [263.01289326946755, 287.9286795378174, 290.51...\n",
+      "200       False   585.0  [155.29593108527237, 220.79073689940904, 220.7...\n",
+      "218       False   645.0  [10.031355795687034, 10.194789476244594, 10.23...\n"
+     ]
+    }
+   ],
+   "source": [
+    "print(nwbfile.units[:][['inhibitory', 'depth', 'spike_times']])"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 43,
+   "id": "5f7d4704-981f-4a21-9159-434a266c2dbd",
+   "metadata": {},
+   "outputs": [
+    {
+     "data": {
+      "text/plain": [
+       "'sub-231CR_ses-20190921T144923_behavior+ecephys+image/f80f5af1-6140-4d88-9734-52fcfe0dca47_external_file_0.mkv'"
+      ]
+     },
+     "execution_count": 43,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "nwbfile.acquisition['behavioral video'].external_file[0]"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "51819cf6-71b0-4882-90f1-ea84c1f96d69",
+   "metadata": {},
+   "outputs": [],
+   "source": []
+  }
+ ],
+ "metadata": {
+  "kernelspec": {
+   "display_name": "Python 3 (ipykernel)",
+   "language": "python",
+   "name": "python3"
+  },
+  "language_info": {
+   "codemirror_mode": {
+    "name": "ipython",
+    "version": 3
+   },
+   "file_extension": ".py",
+   "mimetype": "text/x-python",
+   "name": "python",
+   "nbconvert_exporter": "python",
+   "pygments_lexer": "ipython3",
+   "version": "3.9.10"
+  }
+ },
+ "nbformat": 4,
+ "nbformat_minor": 5
+}
